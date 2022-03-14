@@ -21,8 +21,8 @@ class WallpaperConfig {
     constructor(config) {
         let self = this;
         this.config = config;
-        this.tileSize = random(15, 60),
-        this.passes = random(3, 12),
+        this.tileSize = random(15, 60);
+        this.passes = random(3, 12);
         this.baseColor = self.config.palette.gradientStart.getValue();
         this.secondaryColor = self.config.palette.gradientStop.getValue();
         this.patterns = [
@@ -69,7 +69,7 @@ class WallpaperConfig {
                     push();
                     for (let i = 0; i < random(10, 50); ++i) {
                         stroke(getRandomPaletteColor());
-                        point(random(0, width), random(0, height))
+                        point(random(startX, self.tileSize + startX), random(startY, self.tileSize + startY));
                     }
                     pop();
                 }
@@ -88,27 +88,20 @@ class Config {
 
         self.palette = {
             gradientStart: new ColorConfig(getRandomColor),
-            gradientStop: new ColorConfig(function () {
-                let bgColor = self.palette.gradientStart.getValue();
-                let seedColor = getRandomColor();
-                return lerpColor(
-                    bgColor,
-                    seedColor,
-                    random(.25, .99)
-                );
-            })
-        }
+            gradientStop: new ColorConfig(getRandomColor)
+        };
 
-        self.wallpaper = new WallpaperConfig(self)
+        self.wallpaper = new WallpaperConfig(self);
         self.possibleSubjects = [];
     }
 }
 
-function getRandomPaletteColor() {
+function getRandomPaletteColor(gradientStop = null) {
+    gradientStop ||= config.palette.gradientStop.getValue();
     return lerpColor(
         config.palette.gradientStart.getValue(),
-        config.palette.gradientStop.getValue(),
-        random(0.2, 0.8)
+        gradientStop,
+        random(0.2, 0.9)
     )
 }
 
@@ -147,21 +140,22 @@ function tileShape(shape) {
     }
 }
 
-function paintBowl(baseColor) {
+function paintBowl() {
     let bowlStartX = random(width * .25, width * .75);
     let bowlStartY = 500;
     let bowlHeight = 300;
     let bowlWidth = 300;
-    fill(getRandomPaletteColor())
+    push();
+    fill(getRandomPaletteColor(getRandomColor()))
     arc(bowlStartX, bowlStartY, bowlWidth, bowlHeight, 0, 180, OPEN);
+    pop();
 }
 
 function paintTable() {
-    let baseColor = config.palette.gradientStart.getValue();
-    let color = lerpColor(baseColor, getRandomColor(), .5);
-    color = lerpColor(color, config.palette.gradientStop.getValue(), .5);
-    fill(color);
+    push();
+    fill(getRandomPaletteColor(getRandomColor()))
     rect(0, 600, width, 300)
+    pop();
 }
 
 function paintWallpaper() {
