@@ -161,7 +161,6 @@ function paintTable() {
     let color = lerpColor(baseColor, getRandomColor(), .5);
     color = lerpColor(color, config.palette.gradientStop.getValue(), .5);
     fill(color);
-    fill(lerpColor(baseColor, getRandomColor(), .5));
     rect(0, 600, width, 300)
 }
 
