@@ -107,7 +107,7 @@ class Config {
 function getRandomPaletteColor() {
     return lerpColor(
         config.palette.gradientStart.getValue(),
-        config.palette.gradientStop.generator(),
+        config.palette.gradientStop.getValue(),
         random(0.2, 0.8)
     )
 }
