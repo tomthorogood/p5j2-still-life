@@ -17,6 +17,42 @@ class GeneratedValue {
     }
 }
 
+
+class PatternConfig {
+    constructor() {
+        let self = this;
+        this.patterns = [
+            {
+                name: 'polkadots',
+                defaultWidth: 50,
+                defaultHeight: 50,
+                defaultShade: new GeneratedValue(getRandomColor),
+                generator: function(image, startX = 0, startY = 0, options = null) {
+                    let width = this.defaultWidth;
+                    let height = this.defaultHeight;
+                    let posX = startX;
+                    let posY = startY;
+                    while (posY < image.height) {
+                        while (posX < image.width) {
+                            let dotColor = getRandomPaletteColor(this.defaultShade.getValue());
+                            dotColor.setAlpha(185);
+                            posX += width;
+                            image.push();
+                            image.fill(dotColor);
+                            image.noStroke();
+                            image.ellipse(posX, posY, width, height);
+                            image.pop();
+                        }
+                        posX = 0;
+                        posY += height;
+                    }
+                }
+            }
+        ]
+    }
+}
+
+
 class WallpaperConfig {
     constructor(config) {
         let self = this;
@@ -78,6 +114,7 @@ class WallpaperConfig {
     }
 }
 
+
 class Config {
     constructor() {
         const self = this;
@@ -85,6 +122,11 @@ class Config {
             height: 800,
             width: 800
         };
+
+        self.bowl = {
+            width: self.canvas.width * 0.375,
+            height: self.canvas.height * 0.375
+        }
 
         self.palette = {
             gradientStart: new GeneratedValue(getRandomColor),
@@ -95,6 +137,7 @@ class Config {
         self.possibleSubjects = [];
     }
 }
+
 
 function getRandomPaletteColor(gradientStop = null) {
     gradientStop ||= config.palette.gradientStop.getValue();
@@ -140,17 +183,47 @@ function tileShape(shape) {
     }
 }
 
+function generateBowlPattern() {
+    let p = createGraphics(config.bowl.width, config.bowl.height);
+    p.background(getRandomPaletteColor(getRandomColor()));
+    let wt = random(10, 55);
+    let numDots = random(5, 25);
+    p.push();
+    p.stroke(getRandomPaletteColor(getRandomColor()));
+    p.strokeWeight(wt)
+    p.line(0, 0, config.bowl.width, 0);
+    p.pop();
+    p.push();
+    p.strokeWeight(1);
+    p.stroke('#000000')
+    p.line(1, wt/2, config.bowl.width - 1, wt/2);
+    p.pop();
+    let pc = new PatternConfig();
+    pc.patterns[0].generator(p, -p.width, wt * 2);
+    return p;
+}
+
 function paintBowl() {
     let bowlStartX = random(width * .25, width * .55);
     let bowlStartY = 500;
     let bowlHeight = 300;
     let bowlWidth = 300;
-    let bowl = createGraphics(bowlWidth, bowlHeight);
-    bowl.fill(getRandomPaletteColor(getRandomColor()));
-    bowl.strokeWeight(1.5);
-    bowl.arc(bowlWidth / 2, 0, bowlWidth, bowlHeight, 0, 180, OPEN);
-    bowl.line(0, 0, width, 0); // arc doesn't draw the line on the flat part, so we have to do it.
-    image(bowl, bowlStartX, bowlStartY);
+    let pattern = generateBowlPattern();
+    let bowlPattern = createGraphics(bowlWidth, bowlHeight);
+    let bowlOutline = createGraphics(bowlWidth, bowlHeight);
+    bowlPattern.arc(bowlWidth / 2, 0, bowlWidth, bowlHeight, 0, 180, OPEN);
+    bowlOutline.noFill();
+    bowlOutline.strokeWeight(1.5)
+    bowlOutline.arc(bowlWidth / 2, 0, bowlWidth, bowlHeight, 0, 180, OPEN);
+    bowlOutline.line(0, 0, bowlWidth, 0);
+    ( pImg = pattern.get() ).mask( bowlPattern.get() );
+    image(pImg, bowlStartX, bowlStartY);
+    image(bowlOutline, bowlStartX, bowlStartY);
+    push();
+    pop();
+    bowlPattern.remove();
+    bowlOutline.remove();
+    pattern.remove();
 }
 
 function paintTable() {
