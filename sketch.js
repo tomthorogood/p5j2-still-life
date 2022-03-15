@@ -1,9 +1,9 @@
 // include p5.js
 
 let config = null;
+let generating = false;
 
-
-class ColorConfig {
+class GeneratedValue {
     constructor(generator_) {
         this.generator = generator_;
         this.value = null;
@@ -87,8 +87,8 @@ class Config {
         };
 
         self.palette = {
-            gradientStart: new ColorConfig(getRandomColor),
-            gradientStop: new ColorConfig(getRandomColor)
+            gradientStart: new GeneratedValue(getRandomColor),
+            gradientStop: new GeneratedValue(getRandomColor)
         };
 
         self.wallpaper = new WallpaperConfig(self);
@@ -141,14 +141,16 @@ function tileShape(shape) {
 }
 
 function paintBowl() {
-    let bowlStartX = random(width * .25, width * .75);
+    let bowlStartX = random(width * .25, width * .55);
     let bowlStartY = 500;
     let bowlHeight = 300;
     let bowlWidth = 300;
-    push();
-    fill(getRandomPaletteColor(getRandomColor()))
-    arc(bowlStartX, bowlStartY, bowlWidth, bowlHeight, 0, 180, OPEN);
-    pop();
+    let bowl = createGraphics(bowlWidth, bowlHeight);
+    bowl.fill(getRandomPaletteColor(getRandomColor()));
+    bowl.strokeWeight(1.5);
+    bowl.arc(bowlWidth / 2, 0, bowlWidth, bowlHeight, 0, 180, OPEN);
+    bowl.line(0, 0, width, 0); // arc doesn't draw the line on the flat part, so we have to do it.
+    image(bowl, bowlStartX, bowlStartY);
 }
 
 function paintTable() {
@@ -170,10 +172,52 @@ function paintWallpaper() {
     }
 }
 
+function postDraw() {
+    const loadingIndicator = document.getElementById('loading');
+    const readyIndicator = document.getElementById('ready');
+    loadingIndicator.classList.toggle('visible', false);
+    loadingIndicator.classList.toggle("invisible", true);
+    readyIndicator.classList.toggle('invisible', false);
+    readyIndicator.classList.toggle("visible", true);
+    let backgroundColor = config.palette.gradientStart.getValue();
+    backgroundColor.setAlpha(50);
+    document.getElementById('body').style.backgroundColor = backgroundColor.toString();
+    backgroundColor.setAlpha(40);
+    let canvasElement = document.getElementById('canvas');
+    canvasElement.style.backgroundColor = backgroundColor.toString();
+    document.getElementById('loading').classList.toggle('d-none');
+}
+
+function preDraw() {
+    const loadingIndicator = document.getElementById('loading');
+    const readyIndicator = document.getElementById('ready');
+    loadingIndicator.classList.toggle('invisible', false);
+    loadingIndicator.classList.toggle('visible', true);
+    readyIndicator.classList.toggle('visible', false);
+    readyIndicator.classList.toggle('invisible', true);
+}
 
 function draw() {
-    let backgroundColor = config.palette.gradientStart.getValue();
-    paintWallpaper();
-    paintTable(backgroundColor);
-    paintBowl(backgroundColor);
+    if (!generating) {
+        preDraw();
+        console.log("Generating image using configuration: ")
+        console.log(config);
+        generating = true;
+        let backgroundColor = config.palette.gradientStart.getValue();
+        paintWallpaper();
+        paintTable(backgroundColor);
+        paintBowl(backgroundColor);
+    }
+    generating = false;
+    console.log("Generation complete.");
+    postDraw();
+}
+
+function mouseClicked() {
+    if (!generating) {
+        document.getElementById('loading').classList.toggle('d-none');
+        config = new Config();
+        redraw();
+        document.getElementById('loading').classList.toggle('d-none');
+    }
 }
