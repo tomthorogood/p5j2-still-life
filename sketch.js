@@ -208,15 +208,25 @@ function paintBowl() {
     let bowlStartY = 500;
     let bowlHeight = 300;
     let bowlWidth = 300;
+    let bowlShadowWidth = bowlWidth * 1.1;
+    let bowlShadowHeight = bowlHeight / 5;
     let pattern = generateBowlPattern();
     let bowlPattern = createGraphics(bowlWidth, bowlHeight);
     let bowlOutline = createGraphics(bowlWidth, bowlHeight);
+    let bowlShadow = createGraphics(bowlShadowWidth, bowlShadowHeight);
+    let shadowColor = color('#333')
+    let pImg;
+    shadowColor.setAlpha(90);
+    bowlShadow.noStroke();
+    bowlShadow.fill(shadowColor)
+    bowlShadow.ellipse(bowlShadowWidth /2, bowlShadowHeight / 2, bowlShadowWidth, bowlShadowHeight);
     bowlPattern.arc(bowlWidth / 2, 0, bowlWidth, bowlHeight, 0, 180, OPEN);
     bowlOutline.noFill();
     bowlOutline.strokeWeight(1.5)
     bowlOutline.arc(bowlWidth / 2, 0, bowlWidth, bowlHeight, 0, 180, OPEN);
     bowlOutline.line(0, 0, bowlWidth, 0);
     ( pImg = pattern.get() ).mask( bowlPattern.get() );
+    image(bowlShadow, bowlStartX /2, bowlStartY + (bowlHeight/3));
     image(pImg, bowlStartX, bowlStartY);
     image(bowlOutline, bowlStartX, bowlStartY);
     push();
@@ -224,6 +234,7 @@ function paintBowl() {
     bowlPattern.remove();
     bowlOutline.remove();
     pattern.remove();
+    bowlShadow.remove();
 }
 
 function paintTable() {
