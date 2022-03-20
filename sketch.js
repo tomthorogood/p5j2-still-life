@@ -85,7 +85,6 @@ class Pattern {
         }
         while (options.posY < pg.height) {
             while (options.posX < pg.width) {
-                //console.log("Adding " + this.name + " tile at " + "(" + options.posX + "," + options.posY + ")");
                 this.draw(pg, options);
                 options.posX += options.width;
             }
@@ -188,6 +187,8 @@ class Subject {
         this.pg = createGraphics(width, height);
     }
 
+    getGraphics() { throw Error('Not implemented'); }
+
     drawLayers() {
         let layers = this.layers;
         Object.keys(this.layers).forEach(function(k) {
@@ -217,6 +218,15 @@ class BowlSubject extends Subject {
                     let pattern = patterns[patternName];
                     pg.background(getRandomPaletteColor(getRandomColor()));
                     pattern.tile(pg);
+                    let weight = 30;
+                    pg.strokeWeight(weight);
+                    pg.stroke(getRandomPaletteColor(getRandomColor()));
+                    pg.line(0, weight * .5, pg.width, weight * .5);
+                    pg.strokeWeight(2);
+                    let rimShadow = color('#333333');
+                    rimShadow.setAlpha(80);
+                    pg.stroke(rimShadow);
+                    pg.line(0, weight-1, pg.width, weight-1);
                 }),
                 outline: new Layer('Bowl[outline]', size, size, function(pg) {
                     pg.push();
@@ -235,6 +245,7 @@ class BowlSubject extends Subject {
         let maskedImage = this.layers.pattern.getMaskedImage(this.layers.shape.pg);
         this.pg.image(maskedImage, 0, 0);
         this.pg.image(this.layers.outline.pg, 0, 0);
+        this.cleanup();
         return this.pg;
     }
 }
@@ -365,14 +376,13 @@ function postDraw() {
     backgroundColor.setAlpha(40);
     let canvasElement = document.getElementById('canvas');
     canvasElement.style.backgroundColor = backgroundColor.toString();
-    document.getElementById('loading').classList.toggle('d-none');
 }
 
 function draw() {
     if (!generating) {
+        generating = true;
         console.log("Generating image using configuration: ")
         console.log(config);
-        generating = true;
         let backgroundColor = config.palette.gradientStart.getValue();
         paintWallpaper();
         paintTable(backgroundColor);
@@ -384,9 +394,7 @@ function draw() {
 
 function mouseClicked() {
     if (!generating) {
-        document.getElementById('loading').classList.toggle('d-none');
         config = new Config();
         redraw();
-        document.getElementById('loading').classList.toggle('d-none');
     }
 }
