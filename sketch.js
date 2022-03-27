@@ -3,6 +3,23 @@
 let config = null;
 let generating = false;
 
+let skyColors = {
+    'skyBlue': '#87ceeb',
+    'midnightBlue': '#191970'
+}
+
+let tableColors = {
+    'rawSienna': '#Cf8D5B',
+    'milkChocolate': '#7d533e',
+    'fawn': '#EBA46E',
+    'gold': '#F0B589',
+    'deepChampagne': '#F5D1A9'
+}
+
+function getRandomChoice(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+}
+
 class Layer {
     constructor(name, width = 0, height = 0, paintFn)  {
         this.width = width;
@@ -80,7 +97,6 @@ class Pattern {
 
     tile(pg, options) {
         if (options === undefined || options === null) {
-            console.log("No options passed for pattern " + this.name);
             options = this.optionsTemplate.getOptions();
         }
         while (options.posY < pg.height) {
@@ -168,7 +184,7 @@ class WallpaperConfig {
                 name: 'stucco',
                 generator: function(startX, startY) {
                     push();
-                    for (let i = 0; i < random(10, 50); ++i) {
+                    for (let i = 0; i < random(10, 20); ++i) {
                         stroke(getRandomPaletteColor());
                         point(random(startX, self.tileSize + startX), random(startY, self.tileSize + startY));
                     }
@@ -180,14 +196,20 @@ class WallpaperConfig {
 }
 
 class Subject {
-    constructor(height, width, layers) {
+    constructor(width, height, layers) {
         this.height = height;
         this.width = width;
         this.layers = layers;
         this.pg = createGraphics(width, height);
     }
 
-    getGraphics() { throw Error('Not implemented'); }
+    getGraphics() {
+        this.drawLayers();
+        let keys = Object.keys(this.layers);
+        let base = keys[0];
+        this.pg.image(this.layers[base].pg, 0, 0)
+        return this.pg;
+    }
 
     drawLayers() {
         let layers = this.layers;
@@ -200,6 +222,35 @@ class Subject {
         let layers = this.layers;
         Object.keys(this.layers).forEach(function(k) {
             layers[k].pg.remove();
+        })
+    }
+}
+
+class WindowSubject extends Subject {
+    constructor() {
+        let width = 250;
+        let height = 340;
+        super(400, 300, {
+            shape: new Layer('Window[shape]', width, height, function(pg) {
+                pg.noStroke();
+                let colorName = getRandomChoice(Object.keys(skyColors));
+                pg.background(skyColors[colorName]);
+            })
+        });
+    }
+}
+
+class TableSubject extends Subject {
+    constructor() {
+        let height = 300;
+        super(width, 300, {
+            shape: new Layer('Table[shape]', width, height, function(pg) {
+                pg.noStroke();
+                let tableColorName = getRandomChoice(
+                    Object.keys(tableColors)
+                );
+                pg.background(tableColors[tableColorName]);
+            })
         })
     }
 }
@@ -222,9 +273,9 @@ class BowlSubject extends Subject {
                     pg.strokeWeight(weight);
                     pg.stroke(getRandomPaletteColor(getRandomColor()));
                     pg.line(0, weight * .5, pg.width, weight * .5);
-                    pg.strokeWeight(2);
+                    pg.strokeWeight(1);
                     let rimShadow = color('#333333');
-                    rimShadow.setAlpha(80);
+                    rimShadow.setAlpha(100);
                     pg.stroke(rimShadow);
                     pg.line(0, weight-1, pg.width, weight-1);
                 }),
@@ -235,7 +286,22 @@ class BowlSubject extends Subject {
                     pg.arc(pg.width / 2, 0, pg.width, pg.height, 0, 180, OPEN);
                     pg.line(0, 1, pg.width, 1);
                     pg.pop();
-                })
+                }),
+                directionalLight: new Layer(
+                    'Bowl[directionalLight]',
+                    size, size, function(pg) {
+                        let c1 = color(80);
+                        let c2 = color(80);
+                        c1.setAlpha(160);
+                        c2.setAlpha(0);
+                        for (let x = pg.width; x >= 0; --x) {
+                            let n = map(x, 0, pg.width, 0, 1);
+                            let newColor = lerpColor(c1, c2, n);
+                            pg.stroke(newColor);
+                            pg.line(x, 0, x, pg.height);
+                        }
+                    }
+                )
             }
         );
     }
@@ -243,6 +309,8 @@ class BowlSubject extends Subject {
     getGraphics() {
         this.drawLayers();
         let maskedImage = this.layers.pattern.getMaskedImage(this.layers.shape.pg);
+        this.pg.image(maskedImage, 0, 0);
+        maskedImage = this.layers.directionalLight.getMaskedImage(this.layers.shape.pg);
         this.pg.image(maskedImage, 0, 0);
         this.pg.image(this.layers.outline.pg, 0, 0);
         this.cleanup();
@@ -351,10 +419,13 @@ function paintBowl() {
 }
 
 function paintTable() {
-    push();
-    fill(getRandomPaletteColor(getRandomColor()))
-    rect(0, 600, width, 300)
-    pop();
+    image(new TableSubject().getGraphics(), 0, 600);
+}
+
+function paintWindow() {
+    let window = new WindowSubject();
+    let pg = window.getGraphics();
+    image(pg, 450, 120)
 }
 
 function paintWallpaper() {
@@ -385,6 +456,7 @@ function draw() {
         console.log(config);
         let backgroundColor = config.palette.gradientStart.getValue();
         paintWallpaper();
+        paintWindow();
         paintTable(backgroundColor);
         paintBowl(backgroundColor);
     }
